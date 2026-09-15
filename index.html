@@ -776,6 +776,38 @@
     if (heroArt) attachTilt(heroArt, { max: 8 });
 
     document.querySelectorAll('.tilt-card').forEach((el) => attachTilt(el, { max: 5, lift: -4 }));
+
+    // Eye-tracking: the pupil (and its white glint highlight) drift gently
+    // toward wherever the cursor is, like the eye is looking at you.
+    const iris = document.querySelector('.hero-art .iris');
+    const pupil = document.querySelector('.hero-art .pupil');
+    const glint = document.querySelector('.hero-art .glint');
+    const maxOffset = 12;      // px — how far the pupil is allowed to drift
+    const sensitivity = 0.035; // how strongly distance-to-cursor maps to drift
+
+    if (iris && pupil && glint) {
+      let targetX = 0, targetY = 0, curX = 0, curY = 0;
+
+      window.addEventListener('mousemove', (e) => {
+        const r = iris.getBoundingClientRect();
+        const cx = r.left + r.width / 2;
+        const cy = r.top + r.height / 2;
+        let ox = (e.clientX - cx) * sensitivity;
+        let oy = (e.clientY - cy) * sensitivity;
+        const mag = Math.hypot(ox, oy);
+        if (mag > maxOffset) { ox = (ox / mag) * maxOffset; oy = (oy / mag) * maxOffset; }
+        targetX = ox; targetY = oy;
+      }, { passive: true });
+
+      const followLoop = () => {
+        curX += (targetX - curX) * 0.15;
+        curY += (targetY - curY) * 0.15;
+        pupil.style.transform = `translateZ(48px) translate(${curX.toFixed(2)}px, ${curY.toFixed(2)}px)`;
+        glint.style.transform = `translateZ(64px) translate(${curX.toFixed(2)}px, ${curY.toFixed(2)}px)`;
+        requestAnimationFrame(followLoop);
+      };
+      requestAnimationFrame(followLoop);
+    }
   }
 </script>
 
